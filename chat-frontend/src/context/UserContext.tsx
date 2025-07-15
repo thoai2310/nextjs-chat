@@ -3,17 +3,22 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { api } from '@/lib/api';
+import {usePathname} from "next/navigation";
 
 type User = { _id: string; username: string } | null;
 type Ctx = { user: User; setUser: (u: User) => void };
+const PUBLIC_ROUTES = ['/login', '/register'];
 
 const UserContext = createContext<Ctx | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User>(null);
+    const pathname = usePathname();
 
-    // Nếu BE đã set cookie token ⇒ gọi /auth/me để lấy user
     useEffect(() => {
+        if (user || PUBLIC_ROUTES.includes(pathname)) {
+            return;
+        }
         const cookieUser = Cookies.get('user');
         if (cookieUser) {
             setUser(JSON.parse(cookieUser));
@@ -23,7 +28,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             .get('/auth/me')
             .then((res) => setUser(res.data))
             .catch(() => setUser(null));
-    }, []);
+    }, [pathname, user]);
 
     return <UserContext.Provider value={{ user, setUser }}>{children}</UserContext.Provider>;
 };

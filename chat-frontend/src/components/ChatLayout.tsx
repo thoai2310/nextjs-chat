@@ -6,17 +6,22 @@ import { getUsers } from '@/services/user.service';
 import { getMessages } from '@/services/chat.service';
 import { socket } from '@/lib/socket';
 import { useUser } from '@/context/UserContext';
+import Cookies from 'js-cookie';
+import { useRouter } from 'next/navigation';
+import { ChatUser, ChatMessage } from "@/types";
+import {api} from "@/lib/api";
 
 const { Sider, Content } = Layout;
 
 export default function ChatLayout() {
     const { user } = useUser();
 
-    const [users, setUsers] = useState<any[]>([]);
-    const [selectedUser, setSelectedUser] = useState<any>(null);
-    const [messages, setMessages] = useState<any[]>([]);
+    const [users, setUsers] = useState<ChatUser[]>([]);
+    const [selectedUser, setSelectedUser] = useState<ChatUser | null>(null);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [message, setMessage] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
 
     // auto‑scroll
     useEffect(() => {
@@ -58,27 +63,51 @@ export default function ChatLayout() {
         socket.emit('chat_message', { to: selectedUser._id, message });
         setMessage('');
     };
+    
+    const logout = async () => {
+        try {
+            await api.get('auth/logout');
+        } catch (e) {
+            console.error(e);
+
+        } finally {
+            socket.disconnect();
+            Cookies.remove('token');
+            Cookies.remove('user');
+            router.push('/login');
+        }
+
+      Cookies.remove('token');
+      Cookies.remove('user');
+      router.push('/login');
+    }
 
     if (!user) return <div style={{ padding: 32 }}>Loading...</div>;
 
     return (
         <Layout style={{ height: '100vh' }}>
-            <Sider width={220} style={{ background: '#fff', padding: 16 }}>
-                <List
-                    header={<b>Users</b>}
-                    dataSource={users.filter((u) => u._id !== user._id)}
-                    renderItem={(item) => (
-                        <List.Item
-                            onClick={() => setSelectedUser(item)}
-                            style={{
-                                cursor: 'pointer',
-                                background: selectedUser?._id === item._id ? '#e6f7ff' : undefined,
-                            }}
-                        >
-                            {item.username}
-                        </List.Item>
-                    )}
-                />
+            <Sider width={220} style={{ background: '#fff', padding: 16, display: 'flex', flexDirection: 'column', height: '100vh' }}>
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                    <List
+                        header={<b>Users</b>}
+                        dataSource={users.filter((u) => u._id !== user._id)}
+                        renderItem={(item) => (
+                            <List.Item
+                                onClick={() => setSelectedUser(item)}
+                                style={{
+                                    cursor: 'pointer',
+                                    background: selectedUser?._id === item._id ? '#e6f7ff' : undefined,
+                                }}
+                            >
+                                {item.username}
+                            </List.Item>
+                        )}
+                    />
+                </div>
+
+                <Button type="primary" danger onClick={logout} style={{ marginTop: 16 }}>
+                    Logout
+                </Button>
             </Sider>
 
             <Content style={{ display: 'flex', flexDirection: 'column', padding: 16 }}>

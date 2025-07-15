@@ -45,4 +45,10 @@ export class AuthController {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access
     return request.user;
   }
+
+  @Get('logout')
+  logout(@Res() res: Response) {
+    res.clearCookie('token');
+    return res.status(200).send({ message: 'Logged out' });
+  }
 }

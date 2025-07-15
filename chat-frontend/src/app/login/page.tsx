@@ -6,13 +6,14 @@ import Cookies from 'js-cookie';
 import { login } from '@/services/auth.service';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
+import type { LoginFormValues } from "@/types";
 
 export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const { setUser } = useUser();
 
-    const onFinish = async (values: any) => {
+    const onFinish = async (values: LoginFormValues) => {
         setLoading(true);
         try {
             const { user } = await login(values.username, values.password);
@@ -21,12 +22,15 @@ export default function LoginPage() {
             router.push('/chat');
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
-            console.log('error', err);
             alert('Login failed');
         } finally {
             setLoading(false);
         }
     };
+
+    const nextToRegister = () => {
+      router.push('register');
+    }
 
     return (
         <div style={{ maxWidth: 400, margin: '90px auto' }}>
@@ -41,6 +45,7 @@ export default function LoginPage() {
                 <Button type="primary" htmlType="submit" loading={loading} block>
                     Login
                 </Button>
+                <Button className={'mt-7'} type={'default'} htmlType={'button'} onClick={nextToRegister}>Register</Button>
             </Form>
         </div>
     );
